@@ -10,7 +10,7 @@ UMBRAL = 80
 
 # Enseñar y consultar a Jarvis (se revisan primero)
 REGLAS_META = [
-    (r"^aprende(?: que)?(?: cuando)?(?: yo)? (?:diga|digo)\s+(.+?)\s+(abre|abrir|responde|responder|contesta|di)\s+(.+)$",
+    (r"^aprende(?: que)?(?: cuando)?(?: yo)? (?:diga|digo)\s+(.+?)\s+(abre|abrir|cierra|cerrar|presiona|presionar|responde|responder|contesta|di)\s+(.+)$",
      aprendizaje.ensenar),
     (r"^olvida(?: el comando)?\s+(.+)$", aprendizaje.olvidar),
     (r"que (?:es lo que )?mas (?:uso|te pido)|comandos mas usados", aprendizaje.mas_usados),
@@ -25,6 +25,8 @@ REGLAS = [
     (r"\b(?:reinicia|reiniciar)\b.*\b(?:pc|computador|computadora|equipo|sistema)\b", energia.reiniciar),
     (r"^(?:bloquea|bloquear)\b", energia.bloquear),
     (r"^(?:abre|abrir|abri|ejecuta|lanza)\s+(?:el |la |los |las |mi |mis )?(.+)$", apps.abrir),
+    (r"^(?:cierra|cerrar)\s+(?:el |la |los |las |mi |mis )?(.+)$", apps.cerrar),
+    (r"^(?:presiona|presionar)\s+(.+)$", apps.presionar),
     (r"^(?:busca|buscar|buscame)\s+(.+?)\s+en\s+youtube$", web.buscar_youtube),
     (r"^(?:busca|buscar|buscame)\s+(.+?)(?:\s+en\s+google)?$", web.buscar_google),
     (rf"volumen.*?\b(\d{{1,3}}|{volumen.PALABRAS_NUMERO})\b", volumen.fijar),
@@ -49,10 +51,15 @@ def normalizar(texto):
     texto = "".join(c for c in texto if unicodedata.category(c) != "Mn")
     texto = re.sub(r"[^a-z0-9 ]", " ", texto)
     texto = re.sub(r"\bjarvis\b", " ", texto)
+    texto = re.sub(r"\b(?:sierra|sierre|cierre)\b", "cierra", texto)   # errores típicos de Whisper
     return re.sub(r"\s+", " ", texto).strip()
 
 
 def _comando_base(t):
+    respuesta = apps.atajo_configurado(t)          # "cierra la pestaña", "nueva pestaña"...
+    if respuesta:
+        return respuesta
+
     for patron, funcion in REGLAS:
         m = re.search(patron, t)
         if m:

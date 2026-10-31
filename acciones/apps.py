@@ -18,18 +18,25 @@ def _abrir_app(comando):
         subprocess.Popen(f'start "" {comando}', shell=True)
 
 
-def abrir(m):
-    destino = m.group(1).strip()
+def buscar(destino):
     claves = list(APPS) + list(CARPETAS)
     r = process.extractOne(destino, claves, scorer=fuzz.WRatio, score_cutoff=75)
-    if not r:
+    return r[0] if r else None
+
+
+def abrir_destino(destino):
+    clave = buscar(destino)
+    if not clave:
         return f"No sé abrir {destino}. Puedes agregarlo en el archivo de configuración."
-    clave = r[0]
     if clave in APPS:
         _abrir_app(APPS[clave])
     else:
         os.startfile(os.path.expanduser(CARPETAS[clave]))
     return f"Abriendo {clave}."
+
+
+def abrir(m):
+    return abrir_destino(m.group(1).strip())
 
 
 def modo_trabajo(texto=""):

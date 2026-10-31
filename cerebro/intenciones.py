@@ -4,8 +4,19 @@ import unicodedata
 from rapidfuzz import fuzz, process
 
 from acciones import apps, energia, hora_fecha, sistema, volumen, web
+from cerebro import aprendizaje
 
 UMBRAL = 80
+
+# Enseñar y consultar a Jarvis (se revisan primero)
+REGLAS_META = [
+    (r"^aprende(?: que)?(?: cuando)?(?: yo)? (?:diga|digo)\s+(.+?)\s+(abre|abrir|responde|responder|contesta|di)\s+(.+)$",
+     aprendizaje.ensenar),
+    (r"^olvida(?: el comando)?\s+(.+)$", aprendizaje.olvidar),
+    (r"que (?:es lo que )?mas (?:uso|te pido)|comandos mas usados", aprendizaje.mas_usados),
+    (r"que no (?:has )?entendido|que no entendiste", aprendizaje.no_entendidas),
+    (r"que comandos (?:te he|me has) ensenado|comandos aprendidos", aprendizaje.listar),
+]
 
 # Órdenes con parámetro (regex sobre el texto normalizado). El orden importa.
 REGLAS = [
@@ -41,12 +52,7 @@ def normalizar(texto):
     return re.sub(r"\s+", " ", texto).strip()
 
 
-def procesar(texto):
-    """Devuelve lo que Jarvis debe responder, o None si no entendió."""
-    t = normalizar(texto)
-    if not t:
-        return None
-
+def _comando_base(t):
     for patron, funcion in REGLAS:
         m = re.search(patron, t)
         if m:
@@ -61,3 +67,25 @@ def procesar(texto):
     if mejor_funcion and mejor_puntaje >= UMBRAL:
         return mejor_funcion(t)
     return None
+
+
+def procesar(texto):
+    """Devuelve lo que Jarvis debe responder (texto o Confirmacion), o None si no entendió."""
+    t = normalizar(texto)
+    if not t:
+        return None
+
+    for patron, funcion in REGLAS_META:
+        m = re.search(patron, t)
+        if m:
+            return funcion(m)
+
+    respuesta = aprendizaje.buscar_aprendido(t)      # primero lo que le enseñaste
+    if respuesta is None:
+        respuesta = _comando_base(t)
+
+    if respuesta is None:
+        aprendizaje.registrar_fallo(t)
+    else:
+        aprendizaje.registrar_uso(t)
+    return respuesta

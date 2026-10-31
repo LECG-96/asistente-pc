@@ -3,14 +3,29 @@ import unicodedata
 
 from rapidfuzz import fuzz, process
 
-from acciones import hora_fecha
+from acciones import apps, hora_fecha, sistema, volumen, web
 
-UMBRAL = 80   # sube si activa órdenes equivocadas; baja si no entiende
+UMBRAL = 80
 
-# (frases de ejemplo, función que devuelve lo que Jarvis dirá)
+# Órdenes con parámetro (regex sobre el texto normalizado). El orden importa.
+REGLAS = [
+    (r"^(?:abre|abrir|abri|ejecuta|lanza)\s+(?:el |la |los |las |mi |mis )?(.+)$", apps.abrir),
+    (r"^(?:busca|buscar|buscame)\s+(.+?)\s+en\s+youtube$", web.buscar_youtube),
+    (r"^(?:busca|buscar|buscame)\s+(.+?)(?:\s+en\s+google)?$", web.buscar_google),
+    (rf"volumen.*?\b(\d{{1,3}}|{volumen.PALABRAS_NUMERO})\b", volumen.fijar),
+    (r"(?:sube|subir|aumenta|aumentar).*volumen|mas volumen", volumen.subir),
+    (r"(?:baja|bajar|disminuye|reduce).*volumen|menos volumen", volumen.bajar),
+    (r"(?:activa|reactiva|enciende).*sonido|quita(?:r)? el silencio|desmutea", volumen.activar_sonido),
+    (r"silencia|silenciar|mutea|mutear|silencio", volumen.silenciar),
+]
+
+# Frases libres (coincidencia flexible)
 INTENCIONES = [
     (["que hora es", "dime la hora", "la hora"], hora_fecha.decir_hora),
     (["que fecha es hoy", "que dia es hoy", "dime la fecha", "la fecha"], hora_fecha.decir_fecha),
+    (["estado del pc", "como esta el pc", "como esta el computador", "uso de cpu",
+      "estado del sistema", "como va el computador"], sistema.estado_pc),
+    (["modo trabajo", "vamos a trabajar"], apps.modo_trabajo),
 ]
 
 
@@ -18,7 +33,7 @@ def normalizar(texto):
     texto = unicodedata.normalize("NFD", texto.lower())
     texto = "".join(c for c in texto if unicodedata.category(c) != "Mn")
     texto = re.sub(r"[^a-z0-9 ]", " ", texto)
-    texto = re.sub(r"\bjarvis\b", " ", texto)      # ignora el nombre si lo dices
+    texto = re.sub(r"\bjarvis\b", " ", texto)
     return re.sub(r"\s+", " ", texto).strip()
 
 
@@ -27,6 +42,11 @@ def procesar(texto):
     t = normalizar(texto)
     if not t:
         return None
+
+    for patron, funcion in REGLAS:
+        m = re.search(patron, t)
+        if m:
+            return funcion(m)
 
     mejor_funcion, mejor_puntaje = None, 0
     for frases, funcion in INTENCIONES:

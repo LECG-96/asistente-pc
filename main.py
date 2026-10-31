@@ -1,5 +1,6 @@
 import winsound
 
+from acciones.apps import modo_trabajo
 from cerebro.intenciones import procesar
 from voz.activacion import esperar_activacion
 from voz.escuchar import escuchar
@@ -13,7 +14,7 @@ try:
         print(f"Activado por: {origen}")
 
         if origen == "vamos a trabajar":
-            hablar("Modo trabajo activado.")   # provisional: en el Paso 6 abrirá tus apps
+            hablar(modo_trabajo())
             print("En espera...")
             continue
 

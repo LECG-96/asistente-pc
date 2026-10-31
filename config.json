@@ -1,5 +1,25 @@
 {
   "voz": "es-CL-LorenzoNeural",
   "rate": "-5%",
-  "pitch": "-6Hz"
+  "pitch": "-6Hz",
+  "navegador": "%LOCALAPPDATA%/Programs/Opera GX/opera.exe",
+  "apps": {
+    "opera": "%LOCALAPPDATA%/Programs/Opera GX/opera.exe",
+    "opera gx": "%LOCALAPPDATA%/Programs/Opera GX/opera.exe",
+    "navegador": "%LOCALAPPDATA%/Programs/Opera GX/opera.exe",
+    "visual studio code": "code",
+    "vs code": "code",
+    "bloc de notas": "notepad",
+    "calculadora": "calc",
+    "explorador": "explorer",
+    "spotify": "spotify",
+    "discord": "discord"
+  },
+  "carpetas": {
+    "descargas": "~/Downloads",
+    "documentos": "~/Documents",
+    "escritorio": "~/Desktop",
+    "proyecto": "~/Desktop/Jarvis"
+  },
+  "rutina_trabajo": ["visual studio code", "opera gx"]
 }

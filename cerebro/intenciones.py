@@ -3,12 +3,16 @@ import unicodedata
 
 from rapidfuzz import fuzz, process
 
-from acciones import apps, hora_fecha, sistema, volumen, web
+from acciones import apps, energia, hora_fecha, sistema, volumen, web
 
 UMBRAL = 80
 
 # Órdenes con parámetro (regex sobre el texto normalizado). El orden importa.
 REGLAS = [
+    (r"cancela.*(?:apagado|reinicio)|aborta.*(?:apagado|reinicio)|cancelar apagado", energia.cancelar),
+    (r"\b(?:apaga|apagar)\b.*\b(?:pc|computador|computadora|equipo|sistema)\b", energia.apagar),
+    (r"\b(?:reinicia|reiniciar)\b.*\b(?:pc|computador|computadora|equipo|sistema)\b", energia.reiniciar),
+    (r"^(?:bloquea|bloquear)\b", energia.bloquear),
     (r"^(?:abre|abrir|abri|ejecuta|lanza)\s+(?:el |la |los |las |mi |mis )?(.+)$", apps.abrir),
     (r"^(?:busca|buscar|buscame)\s+(.+?)\s+en\s+youtube$", web.buscar_youtube),
     (r"^(?:busca|buscar|buscame)\s+(.+?)(?:\s+en\s+google)?$", web.buscar_google),

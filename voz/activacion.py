@@ -49,13 +49,15 @@ def _detectar(audio):
     return None
 
 
-def esperar_activacion():
+def esperar_activacion(pausa=lambda: False):
     """Bloquea hasta oír una frase clave o presionar el atajo.
-    Devuelve 'atajo', 'jarvis' o 'vamos a trabajar'."""
+    Devuelve 'atajo', 'jarvis', 'vamos a trabajar', o None si se pausó."""
     _atajo.clear()
     frase, silencios = [], 0
     with sd.InputStream(samplerate=SR, channels=1, dtype="float32", blocksize=BLOQUE) as flujo:
         while True:
+            if pausa():
+                return None
             if _atajo.is_set():
                 return "atajo"
 

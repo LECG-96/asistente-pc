@@ -14,7 +14,7 @@
      "abrir": "%LOCALAPPDATA%/Discord/Discord.exe", "cerrar": "Discord.exe", "forzar": true},
     {"nombre": "modrinth", "alias": ["modrinth app"],
      "abrir": "%LOCALAPPDATA%/Modrinth App/Modrinth App.exe", "cerrar": "Modrinth App.exe"},
-    {"nombre": "itero", "alias": ["the itero coach", "itero coach"],
+    {"nombre": "itero", "alias": ["the itero coach", "itero coach", "itero"],
      "abrir": "D:/iTero Drafting Coach Electron/The iTero Coach.exe", "cerrar": "The iTero Coach.exe"},
     {"nombre": "itunes",
      "abrir": "C:/Program Files (x86)/iTunes/iTunes.exe", "cerrar": "iTunes.exe"},

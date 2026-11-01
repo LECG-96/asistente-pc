@@ -6,15 +6,18 @@ import keyboard
 import numpy as np
 import sounddevice as sd
 
-from voz.escuchar import _modelo   # reutiliza el Whisper ya cargado
+from config import CFG
+from voz.escuchar import _modelo, normalizar_audio
 
 SR = 16000
 BLOQUE = 4000            # 0.25 s de audio por bloque
-UMBRAL = 0.015           # volumen mínimo para considerar que hablas
+UMBRAL = CFG.get("umbral_voz", 0.015)
 SILENCIO_BLOQUES = 2     # 0.5 s de pausa = fin de la frase
-MAX_BLOQUES = 16         # máximo 4 s por frase
+MAX_BLOQUES = 24         # hasta 6 s por frase (cabe "Jarvis, abre ...")
 ATAJO = "ctrl+alt+j"
 DEPURAR = True           # muestra lo que oye; ponlo en False cuando todo funcione
+
+VOCABULARIO = "Jarvis. Vamos a trabajar. Abre, cierra, busca."
 
 # frase que activa -> variantes con las que Whisper puede escribirla
 CLAVES = {
@@ -29,29 +32,37 @@ keyboard.add_hotkey(ATAJO, _atajo.set)
 def _normalizar(texto):
     texto = unicodedata.normalize("NFD", texto.lower())
     texto = "".join(c for c in texto if unicodedata.category(c) != "Mn")
-    return re.sub(r"[^a-z ]", " ", texto)
+    return re.sub(r"[^a-z0-9 ]", " ", texto)
 
 
 def _detectar(audio):
+    """Devuelve (frase clave, resto de lo que dijiste después), o (None, "")."""
+    audio = normalizar_audio(audio)
     segmentos, _ = _modelo.transcribe(
         audio,
         language="es",
-        beam_size=1,
+        beam_size=3,
         vad_filter=True,
-        initial_prompt="Jarvis. Vamos a trabajar.",
+        initial_prompt=VOCABULARIO,
     )
     texto = _normalizar(" ".join(s.text for s in segmentos))
     if DEPURAR and texto.strip():
         print("[oído]", texto.strip())
+
     for clave, variantes in CLAVES.items():
-        if any(v in texto for v in variantes):
-            return clave
-    return None
+        for variante in variantes:
+            pos = texto.find(variante)
+            if pos != -1:
+                resto = re.sub(r"\s+", " ", texto[pos + len(variante):]).strip()
+                return clave, resto
+    return None, ""
 
 
 def esperar_activacion(pausa=lambda: False):
     """Bloquea hasta oír una frase clave o presionar el atajo.
-    Devuelve 'atajo', 'jarvis', 'vamos a trabajar', o None si se pausó."""
+    Devuelve (origen, orden): origen es 'atajo', 'jarvis' o 'vamos a trabajar';
+    orden es lo que dijiste después de 'Jarvis' (o None si no dijiste nada más).
+    Devuelve None si se pausó."""
     _atajo.clear()
     frase, silencios = [], 0
     with sd.InputStream(samplerate=SR, channels=1, dtype="float32", blocksize=BLOQUE) as flujo:
@@ -59,7 +70,7 @@ def esperar_activacion(pausa=lambda: False):
             if pausa():
                 return None
             if _atajo.is_set():
-                return "atajo"
+                return "atajo", None
 
             bloque, _ = flujo.read(BLOQUE)
             bloque = bloque.flatten()
@@ -75,6 +86,6 @@ def esperar_activacion(pausa=lambda: False):
             if frase and (silencios >= SILENCIO_BLOQUES or len(frase) >= MAX_BLOQUES):
                 audio = np.concatenate(frase)
                 frase, silencios = [], 0
-                clave = _detectar(audio)
+                clave, resto = _detectar(audio)
                 if clave:
-                    return clave
+                    return clave, (resto if len(resto) >= 3 else None)

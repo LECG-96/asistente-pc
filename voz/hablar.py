@@ -1,7 +1,8 @@
 import asyncio
+import hashlib
 import json
-import os
-import tempfile
+import threading
+import time
 from pathlib import Path
 
 import edge_tts
@@ -17,7 +18,10 @@ VOZ = _CFG["voz"]
 RATE = _CFG["rate"]
 PITCH = _CFG["pitch"]
 
-# Efecto suave: toque de "sala" sobre una voz que ya es natural
+CACHE = BASE / "datos" / "cache_voz"
+CACHE.mkdir(parents=True, exist_ok=True)
+MAX_CACHE = 600          # máximo de frases guardadas; las más antiguas se borran
+
 JARVIS = Pedalboard([
     HighpassFilter(cutoff_frequency_hz=80),
     Compressor(threshold_db=-18, ratio=2.5),
@@ -26,15 +30,47 @@ JARVIS = Pedalboard([
 ])
 
 
-async def _generar(texto, ruta, voz, rate, pitch):
+async def _sintetizar(texto, ruta, voz, rate, pitch):
     await edge_tts.Communicate(texto, voz, rate=rate, pitch=pitch).save(ruta)
 
 
+def _ruta_cache(texto, voz, rate, pitch):
+    clave = hashlib.md5(f"{voz}|{rate}|{pitch}|{texto}".encode("utf-8")).hexdigest()
+    return CACHE / f"{clave}.mp3"
+
+
+def _limpiar():
+    archivos = sorted(CACHE.glob("*.mp3"), key=lambda p: p.stat().st_mtime)
+    for p in archivos[:-MAX_CACHE]:
+        p.unlink(missing_ok=True)
+
+
+def _generar(texto, voz, rate, pitch):
+    """Devuelve el audio de la frase; solo usa internet si aún no está guardada."""
+    ruta = _ruta_cache(texto, voz, rate, pitch)
+    if not ruta.exists():
+        tmp = ruta.with_name(f"{ruta.stem}.{threading.get_ident()}.tmp")
+        asyncio.run(_sintetizar(texto, str(tmp), voz, rate, pitch))
+        tmp.replace(ruta)
+        _limpiar()
+    return ruta
+
+
+def precalentar(frases):
+    """Genera en segundo plano las frases que aún no están guardadas."""
+    for frase in frases:
+        if _ruta_cache(frase, VOZ, RATE, PITCH).exists():
+            continue
+        try:
+            _generar(frase, VOZ, RATE, PITCH)
+        except Exception:
+            return                  # sin internet: se reintenta en el próximo arranque
+        time.sleep(0.3)
+
+
 def hablar(texto, efectos=True, voz=VOZ, rate=RATE, pitch=PITCH):
-    with tempfile.TemporaryDirectory() as tmp:
-        ruta = os.path.join(tmp, "voz.mp3")
-        asyncio.run(_generar(texto, ruta, voz, rate, pitch))
-        audio, sr = sf.read(ruta, dtype="float32")
+    ruta = _generar(texto, voz, rate, pitch)
+    audio, sr = sf.read(str(ruta), dtype="float32")
 
     if efectos:
         audio = JARVIS(audio, sr)

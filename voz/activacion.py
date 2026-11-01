@@ -6,6 +6,7 @@ import keyboard
 import numpy as np
 import sounddevice as sd
 
+from acciones.rutinas import RUTINAS
 from config import CFG
 from voz.escuchar import _modelo, normalizar_audio
 
@@ -17,13 +18,15 @@ MAX_BLOQUES = 24         # hasta 6 s por frase (cabe "Jarvis, abre ...")
 ATAJO = "ctrl+alt+j"
 DEPURAR = True           # muestra lo que oye; ponlo en False cuando todo funcione
 
-VOCABULARIO = "Jarvis. Vamos a trabajar. Abre, cierra, busca."
+# Frases de las rutinas que se activan sin decir "Jarvis" (marcadas "sin_jarvis" en config.json)
+_frases_clave = [r["frases"][0].capitalize() + "." for r in RUTINAS.values() if r.get("sin_jarvis")]
+VOCABULARIO = "Jarvis. " + " ".join(_frases_clave) + " Abre, cierra, busca."
 
 # frase que activa -> variantes con las que Whisper puede escribirla
-CLAVES = {
-    "jarvis": ["jarvis", "yarvis", "jarbis", "yarbis", "charvis"],
-    "vamos a trabajar": ["vamos a trabajar", "vamo a trabajar", "vamos trabajar"],
-}
+CLAVES = {"jarvis": ["jarvis", "yarvis", "jarbis", "yarbis", "charvis"]}
+for _nombre, _r in RUTINAS.items():
+    if _r.get("sin_jarvis"):
+        CLAVES[f"rutina:{_nombre}"] = _r["frases"]
 
 _atajo = threading.Event()
 keyboard.add_hotkey(ATAJO, _atajo.set)
@@ -60,7 +63,7 @@ def _detectar(audio):
 
 def esperar_activacion(pausa=lambda: False):
     """Bloquea hasta oír una frase clave o presionar el atajo.
-    Devuelve (origen, orden): origen es 'atajo', 'jarvis' o 'vamos a trabajar';
+    Devuelve (origen, orden): origen es 'atajo', 'jarvis' o 'rutina:<nombre>';
     orden es lo que dijiste después de 'Jarvis' (o None si no dijiste nada más).
     Devuelve None si se pausó."""
     _atajo.clear()

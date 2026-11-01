@@ -3,9 +3,12 @@ import unicodedata
 
 from rapidfuzz import fuzz, process
 
-from acciones import (apps, energia, hora_fecha, multimedia, sistema,
+from acciones import (apps, energia, hora_fecha, multimedia, rutinas, sistema,
                       temporizadores, volumen, web)
+
 from cerebro import aprendizaje
+
+
 
 UMBRAL = 80
 
@@ -46,7 +49,6 @@ INTENCIONES = [
     (["que fecha es hoy", "que dia es hoy", "dime la fecha", "la fecha"], hora_fecha.decir_fecha),
     (["estado del pc", "como esta el pc", "como esta el computador", "uso de cpu",
       "estado del sistema", "como va el computador"], sistema.estado_pc),
-    (["modo trabajo", "vamos a trabajar"], apps.modo_trabajo),
     (["pausa la musica", "pausa", "reproduce la musica", "reanuda la musica",
       "continua la musica", "play", "para la musica"], multimedia.pausa_play),
     (["siguiente cancion", "siguiente tema", "pasa a la siguiente cancion",
@@ -54,6 +56,10 @@ INTENCIONES = [
     (["cancion anterior", "tema anterior", "vuelve a la cancion anterior",
       "pon la cancion anterior"], multimedia.anterior),
 ]
+
+# Cada rutina de config.json se activa con sus frases ("Jarvis, modo estudio")
+for _r in rutinas.RUTINAS.values():
+    INTENCIONES.append((_r["frases"], lambda texto, r=_r: rutinas.ejecutar(r)))
 
 
 def normalizar(texto):

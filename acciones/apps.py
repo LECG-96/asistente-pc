@@ -103,6 +103,19 @@ def cerrar(m):
     return cerrar_destino(m.group(1).strip())
 
 
+def cerrar_silencioso(destino):
+    """Cierra sin preguntar. Devuelve True, False si no sabe cerrarlo,
+    o None si requiere confirmación (en ese caso no lo cierra)."""
+    clave = buscar_proceso(destino)
+    if not clave:
+        return False
+    app = APPS[clave]
+    if app.get("confirmar"):
+        return None
+    _terminar(app["cerrar"], app.get("forzar", False))
+    return True
+
+
 # ---------- teclas ----------
 def combinacion(texto):
     """Convierte 'control shift t' en 'ctrl+shift+t'. Devuelve None si no la entiende."""
@@ -132,15 +145,3 @@ def presionar(m):
 def atajo_configurado(t):
     clave = _mejor(t, ATAJOS, corte=88, scorer=fuzz.ratio)
     return presionar_combo(ATAJOS[clave]) if clave else None
-
-
-# ---------- rutina ----------
-def modo_trabajo(texto=""):
-    abiertas = []
-    for nombre in CFG["rutina_trabajo"]:
-        if nombre in APPS:
-            _abrir_app(APPS[nombre]["abrir"])
-            abiertas.append(nombre)
-    if not abiertas:
-        return "Modo trabajo activado, pero no hay aplicaciones configuradas."
-    return "Modo trabajo activado. Abriendo " + " y ".join(abiertas) + "."

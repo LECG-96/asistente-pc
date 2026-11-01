@@ -13,7 +13,7 @@ if sys.stdout is None:
 import sounddevice as sd
 
 import bandeja
-from acciones import apps
+from acciones import apps, rutinas
 from cerebro.confirmacion import Confirmacion, es_afirmativo
 from cerebro.intenciones import procesar
 from voz.activacion import esperar_activacion
@@ -27,6 +27,7 @@ def elegir_microfono(nombre):
             sd.default.device = (i, sd.default.device[1])
             print(f"Micrófono: {d['name']}")
             return
+    print(f"No encontré un micrófono con el nombre '{nombre}'; uso el predeterminado de Windows.")
 
 
 if CFG.get("microfono"):
@@ -43,15 +44,13 @@ def frases_comunes():
     frases += [f"Abriendo {d}." for d in [*apps.APPS, *apps.CARPETAS, *apps.PAGINAS]]
     frases += [f"Cerrando {n}." for n, a in apps.APPS.items() if a.get("cerrar")]
     frases += [f"Listo, {combo}." for combo in apps.ATAJOS.values()]
-    rutina = CFG.get("rutina_trabajo", [])
-    if rutina:
-        frases.append("Modo trabajo activado. Abriendo " + " y ".join(rutina) + ".")
+    frases += [rutinas.mensaje_de(r) for r in rutinas.RUTINAS.values()]
     return frases
 
 
 def atender(origen, orden=None):
-    if origen == "vamos a trabajar":
-        hablar(apps.modo_trabajo())
+    if origen.startswith("rutina:"):
+        hablar(rutinas.ejecutar(rutinas.RUTINAS[origen.split(":", 1)[1]]))
         return
 
     if orden:                              # "Jarvis, abre Steam": ya viene la orden

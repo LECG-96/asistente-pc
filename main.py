@@ -36,7 +36,9 @@ if CFG.get("microfono"):
 def frases_comunes():
     """Frases que Jarvis dice seguido: se dejan listas para que respondan al instante."""
     frases = ["Jarvis en línea.", "No te escuché.", "No entendí esa orden.", "Cancelado.",
-              "Operación cancelada.", "Silenciado.", "Sonido activado.", "Equipo bloqueado."]
+              "Operación cancelada.", "Silenciado.", "Sonido activado.", "Equipo bloqueado.",
+              "Listo.", "Siguiente canción.", "Canción anterior.",
+              "Temporizador cancelado.", "No hay temporizadores activos."]
     frases += [f"Volumen al {n} por ciento." for n in range(0, 101, 10)]
     frases += [f"Abriendo {d}." for d in [*apps.APPS, *apps.CARPETAS, *apps.PAGINAS]]
     frases += [f"Cerrando {n}." for n, a in apps.APPS.items() if a.get("cerrar")]

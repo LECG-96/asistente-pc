@@ -3,7 +3,8 @@ import unicodedata
 
 from rapidfuzz import fuzz, process
 
-from acciones import apps, energia, hora_fecha, sistema, volumen, web
+from acciones import (apps, energia, hora_fecha, multimedia, sistema,
+                      temporizadores, volumen, web)
 from cerebro import aprendizaje
 
 UMBRAL = 80
@@ -24,6 +25,9 @@ REGLAS = [
     (r"\b(?:apaga|apagar)\b.*\b(?:pc|computador|computadora|equipo|sistema)\b", energia.apagar),
     (r"\b(?:reinicia|reiniciar)\b.*\b(?:pc|computador|computadora|equipo|sistema)\b", energia.reiniciar),
     (r"^(?:bloquea|bloquear)\b", energia.bloquear),
+    (r"cancela.*(?:temporizador|temporizadores|alarma|alarmas|recordatorio|recordatorios)", temporizadores.cancelar),
+    (r"cuanto (?:falta|queda)|que temporizadores tengo|temporizadores activos", temporizadores.estado),
+    (r"\b(?:temporizador|alarma|avisame|recuerdame)\b.*\b(?:segundos?|minutos?|horas?|media hora)\b", temporizadores.crear),
     (r"^(?:abre|abrir|abri|ejecuta|lanza)\s+(?:el |la |los |las |mi |mis )?(.+)$", apps.abrir),
     (r"^(?:cierra|cerrar)\s+(?:el |la |los |las |mi |mis )?(.+)$", apps.cerrar),
     (r"^(?:presiona|presionar)\s+(.+)$", apps.presionar),
@@ -43,6 +47,12 @@ INTENCIONES = [
     (["estado del pc", "como esta el pc", "como esta el computador", "uso de cpu",
       "estado del sistema", "como va el computador"], sistema.estado_pc),
     (["modo trabajo", "vamos a trabajar"], apps.modo_trabajo),
+    (["pausa la musica", "pausa", "reproduce la musica", "reanuda la musica",
+      "continua la musica", "play", "para la musica"], multimedia.pausa_play),
+    (["siguiente cancion", "siguiente tema", "pasa a la siguiente cancion",
+      "salta la cancion", "cambia la cancion"], multimedia.siguiente),
+    (["cancion anterior", "tema anterior", "vuelve a la cancion anterior",
+      "pon la cancion anterior"], multimedia.anterior),
 ]
 
 

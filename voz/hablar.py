@@ -22,6 +22,8 @@ CACHE = BASE / "datos" / "cache_voz"
 CACHE.mkdir(parents=True, exist_ok=True)
 MAX_CACHE = 600          # máximo de frases guardadas; las más antiguas se borran
 
+_REPRODUCCION = threading.Lock()
+
 JARVIS = Pedalboard([
     HighpassFilter(cutoff_frequency_hz=80),
     Compressor(threshold_db=-18, ratio=2.5),
@@ -75,5 +77,6 @@ def hablar(texto, efectos=True, voz=VOZ, rate=RATE, pitch=PITCH):
     if efectos:
         audio = JARVIS(audio, sr)
 
-    sd.play(audio, sr)
-    sd.wait()
+    with _REPRODUCCION:
+        sd.play(audio, sr)
+        sd.wait()

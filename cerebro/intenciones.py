@@ -3,8 +3,8 @@ import unicodedata
 
 from rapidfuzz import fuzz, process
 
-from acciones import (apps, clima, energia, hora_fecha, multimedia, rutinas, sistema,
-                      temporizadores, volumen, web)
+from acciones import (apps, clima, energia, hora_fecha, ia, multimedia, rutinas,
+                      sistema, temporizadores, volumen, web)
 from cerebro import aprendizaje
 from voz import dictado
 
@@ -25,6 +25,11 @@ REGLAS_META = [
 
 # Órdenes con parámetro (regex sobre el texto normalizado). El orden importa.
 REGLAS = [
+    (r"nueva conversacion|olvida la conversacion|reinicia la conversacion", ia.reiniciar),
+    # Preguntas libres para la IA local. Van primero para que "explicame que es apagar el pc" no apague nada
+    (r"^(?:pregunta|preguntale)\b|^(?:explicame|explica|cuentame|define|resumeme|resume)\b"
+     r"|^(?:que (?:es|son|significa|significan)|quien (?:es|fue|era|fueron)|como funcionan?|por que"
+     r"|para que sirven?|cual es la diferencia|cuales son|cuanto es|cuantos|cuantas)\b", ia.preguntar),
     (r"cancela.*(?:apagado|reinicio)|aborta.*(?:apagado|reinicio)|cancelar apagado", energia.cancelar),
     (r"\b(?:apaga|apagar)\b.*\b(?:pc|computador|computadora|equipo|sistema)\b", energia.apagar),
     (r"\b(?:reinicia|reiniciar)\b.*\b(?:pc|computador|computadora|equipo|sistema)\b", energia.reiniciar),
@@ -109,9 +114,11 @@ def procesar(texto):
     respuesta = aprendizaje.buscar_aprendido(t)      # primero lo que le enseñaste
     if respuesta is None:
         respuesta = _comando_base(t)
+    if respuesta is None and ia.RESPONDER_TODO and len(t.split()) >= 3:
+        respuesta = ia.responder(t)                  # opcional: todo lo demás va a la IA
 
     if respuesta is None or (isinstance(respuesta, str) and respuesta.startswith(FALLOS)):
         aprendizaje.registrar_fallo(t)
-    else:
+    elif not isinstance(respuesta, ia.RespuestaIA):
         aprendizaje.registrar_uso(t)
     return respuesta

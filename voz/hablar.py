@@ -1,6 +1,7 @@
 import asyncio
 import hashlib
 import json
+import tempfile
 import threading
 import time
 from pathlib import Path
@@ -21,8 +22,9 @@ PITCH = _CFG["pitch"]
 CACHE = BASE / "datos" / "cache_voz"
 CACHE.mkdir(parents=True, exist_ok=True)
 MAX_CACHE = 600          # máximo de frases guardadas; las más antiguas se borran
+LARGO_MAX_CACHE = 80     # las frases más largas (clima, respuestas de la IA) no se guardan
 
-_REPRODUCCION = threading.Lock()
+_REPRODUCCION = threading.Lock()   # una sola voz a la vez
 
 JARVIS = Pedalboard([
     HighpassFilter(cutoff_frequency_hz=80),
@@ -71,8 +73,13 @@ def precalentar(frases):
 
 
 def hablar(texto, efectos=True, voz=VOZ, rate=RATE, pitch=PITCH):
-    ruta = _generar(texto, voz, rate, pitch)
-    audio, sr = sf.read(str(ruta), dtype="float32")
+    if len(texto) > LARGO_MAX_CACHE:           # frase única: se usa una sola vez
+        with tempfile.TemporaryDirectory() as tmp:
+            ruta = Path(tmp) / "voz.mp3"
+            asyncio.run(_sintetizar(texto, str(ruta), voz, rate, pitch))
+            audio, sr = sf.read(str(ruta), dtype="float32")
+    else:
+        audio, sr = sf.read(str(_generar(texto, voz, rate, pitch)), dtype="float32")
 
     if efectos:
         audio = JARVIS(audio, sr)

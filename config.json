@@ -4,6 +4,14 @@
   "pitch": "-6Hz",
   "umbral_voz": 0.01,
   "ciudad": {"nombre": "Puente Alto", "lat": -33.61, "lon": -70.58},
+  "ia": {
+    "modelo": "gemma3:4b",
+    "gpu": "auto",
+    "vram_minima_mb": 4000,
+    "mantener_cargado": "2m",
+    "max_tokens": 160,
+    "responder_todo": false
+  },
   "navegador": "%LOCALAPPDATA%/Programs/Opera GX/opera.exe",
   "apps": [
     {"nombre": "opera gx", "alias": ["opera", "navegador"],
@@ -16,7 +24,7 @@
      "abrir": "%LOCALAPPDATA%/Discord/Discord.exe", "cerrar": "Discord.exe", "forzar": true},
     {"nombre": "modrinth", "alias": ["modrinth app"],
      "abrir": "%LOCALAPPDATA%/Modrinth App/Modrinth App.exe", "cerrar": "Modrinth App.exe"},
-    {"nombre": "itero", "alias": ["the itero coach", "itero coach", "itero"],
+    {"nombre": "itero", "alias": ["the itero coach", "itero coach"],
      "abrir": "D:/iTero Drafting Coach Electron/The iTero Coach.exe", "cerrar": "The iTero Coach.exe"},
     {"nombre": "itunes",
      "abrir": "C:/Program Files (x86)/iTunes/iTunes.exe", "cerrar": "iTunes.exe"},
@@ -34,7 +42,7 @@
      "abrir": "D:/Riot Games/Riot Client/RiotClientServices.exe",
      "cerrar": ["RiotClientServices.exe", "RiotClientUx.exe", "RiotClientUxRender.exe"],
      "forzar": true, "confirmar": true},
-    {"nombre": "league of legends", "alias": ["league", "lol", "liga de leyendas", "lolcito"],
+    {"nombre": "league of legends", "alias": ["league", "lol", "liga de leyendas"],
      "abrir": ["D:/Riot Games/Riot Client/RiotClientServices.exe",
                "--launch-product=league_of_legends", "--launch-patchline=live"],
      "cerrar": ["LeagueClient.exe", "LeagueClientUx.exe", "League of Legends.exe"],

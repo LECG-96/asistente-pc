@@ -3,14 +3,15 @@ import unicodedata
 
 from rapidfuzz import fuzz, process
 
-from acciones import (apps, energia, hora_fecha, multimedia, rutinas, sistema,
+from acciones import (apps, clima, energia, hora_fecha, multimedia, rutinas, sistema,
                       temporizadores, volumen, web)
-
 from cerebro import aprendizaje
-
-
+from voz import dictado
 
 UMBRAL = 80
+
+# Respuestas que significan "no entendí / no sé hacerlo": cuentan como fallo, no como uso
+FALLOS = ("No sé ", "No conozco", "No entendí")
 
 # Enseñar y consultar a Jarvis (se revisan primero)
 REGLAS_META = [
@@ -31,11 +32,13 @@ REGLAS = [
     (r"cancela.*(?:temporizador|temporizadores|alarma|alarmas|recordatorio|recordatorios)", temporizadores.cancelar),
     (r"cuanto (?:falta|queda)|que temporizadores tengo|temporizadores activos", temporizadores.estado),
     (r"\b(?:temporizador|alarma|avisame|recuerdame)\b.*\b(?:segundos?|minutos?|horas?|media hora)\b", temporizadores.crear),
+    (r"^(?:dicta|dictar|dictado|modo dictado|empieza a dictar|inicia el dictado|activa el dictado)\b", dictado.dictar),
     (r"^(?:abre|abrir|abri|ejecuta|lanza)\s+(?:el |la |los |las |mi |mis )?(.+)$", apps.abrir),
     (r"^(?:cierra|cerrar)\s+(?:el |la |los |las |mi |mis )?(.+)$", apps.cerrar),
     (r"^(?:presiona|presionar)\s+(.+)$", apps.presionar),
     (r"^(?:busca|buscar|buscame)\s+(.+?)\s+en\s+youtube$", web.buscar_youtube),
     (r"^(?:busca|buscar|buscame)\s+(.+?)(?:\s+en\s+google)?$", web.buscar_google),
+    (r"\b(?:clima|pronostico|llover|lluvia)\b|que temperatura hace|temperatura (?:afuera|exterior)|hace (?:frio|calor)", clima.clima),
     (rf"volumen.*?\b(\d{{1,3}}|{volumen.PALABRAS_NUMERO})\b", volumen.fijar),
     (r"(?:sube|subir|aumenta|aumentar).*volumen|mas volumen", volumen.subir),
     (r"(?:baja|bajar|disminuye|reduce).*volumen|menos volumen", volumen.bajar),
@@ -107,7 +110,7 @@ def procesar(texto):
     if respuesta is None:
         respuesta = _comando_base(t)
 
-    if respuesta is None:
+    if respuesta is None or (isinstance(respuesta, str) and respuesta.startswith(FALLOS)):
         aprendizaje.registrar_fallo(t)
     else:
         aprendizaje.registrar_uso(t)

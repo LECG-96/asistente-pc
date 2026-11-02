@@ -3,6 +3,7 @@
   "rate": "-5%",
   "pitch": "-6Hz",
   "umbral_voz": 0.01,
+  "ciudad": {"nombre": "Puente Alto", "lat": -33.61, "lon": -70.58},
   "navegador": "%LOCALAPPDATA%/Programs/Opera GX/opera.exe",
   "apps": [
     {"nombre": "opera gx", "alias": ["opera", "navegador"],

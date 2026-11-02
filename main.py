@@ -1,3 +1,4 @@
+import re
 import sys
 import threading
 import time
@@ -13,12 +14,15 @@ if sys.stdout is None:
 import sounddevice as sd
 
 import bandeja
-from acciones import apps, rutinas
+from acciones import apps, ia, rutinas
 from cerebro.confirmacion import Confirmacion, es_afirmativo
-from cerebro.intenciones import procesar
+from cerebro.intenciones import normalizar, procesar
 from voz.activacion import esperar_activacion
 from voz.escuchar import escuchar
 from voz.hablar import hablar, precalentar
+
+# Frases con las que das por terminada una charla con la IA
+FIN_CHARLA = re.compile(r"\b(?:gracias|eso es todo|nada mas|ya esta|listo|adios|hasta luego|terminar conversacion)\b")
 
 
 def elegir_microfono(nombre):
@@ -39,13 +43,44 @@ def frases_comunes():
     frases = ["Jarvis en línea.", "No te escuché.", "No entendí esa orden.", "Cancelado.",
               "Operación cancelada.", "Silenciado.", "Sonido activado.", "Equipo bloqueado.",
               "Listo.", "Siguiente canción.", "Canción anterior.",
-              "Temporizador cancelado.", "No hay temporizadores activos."]
+              "Temporizador cancelado.", "No hay temporizadores activos.",
+              "Dictado terminado.", "De nada.", "Conversación reiniciada."]
     frases += [f"Volumen al {n} por ciento." for n in range(0, 101, 10)]
     frases += [f"Abriendo {d}." for d in [*apps.APPS, *apps.CARPETAS, *apps.PAGINAS]]
     frases += [f"Cerrando {n}." for n, a in apps.APPS.items() if a.get("cerrar")]
     frases += [f"Listo, {combo}." for combo in apps.ATAJOS.values()]
     frases += [rutinas.mensaje_de(r) for r in rutinas.RUTINAS.values()]
     return frases
+
+
+def ejecutar_orden(texto):
+    """Procesa la orden y la dice en voz alta. Devuelve la respuesta."""
+    respuesta = procesar(texto)
+    if isinstance(respuesta, Confirmacion):
+        hablar(respuesta.pregunta)
+        winsound.Beep(900, 150)
+        confirmacion = escuchar(espera=5, maximo=6)
+        print("Confirmación:", confirmacion)
+        hablar(respuesta.accion() if es_afirmativo(confirmacion) else "Cancelado.")
+    else:
+        hablar(respuesta or "No entendí esa orden.")
+    return respuesta
+
+
+def seguir_conversacion():
+    """Tras una respuesta de la IA sigue escuchando, sin que tengas que decir 'Jarvis'."""
+    while True:
+        winsound.Beep(900, 150)
+        texto = escuchar(espera=6)
+        print("Seguimiento:", texto)
+        if not texto:
+            return                                   # silencio: termina la charla
+        if FIN_CHARLA.search(normalizar(texto)):
+            hablar("De nada.")
+            return
+        respuesta = ejecutar_orden(texto)
+        if not isinstance(respuesta, ia.RespuestaIA):
+            return                                   # era una orden normal: termina la charla
 
 
 def atender(origen, orden=None):
@@ -64,15 +99,9 @@ def atender(origen, orden=None):
         hablar("No te escuché.")
         return
 
-    respuesta = procesar(texto)
-    if isinstance(respuesta, Confirmacion):
-        hablar(respuesta.pregunta)
-        winsound.Beep(900, 150)
-        confirmacion = escuchar(4)
-        print("Confirmación:", confirmacion)
-        hablar(respuesta.accion() if es_afirmativo(confirmacion) else "Cancelado.")
-    else:
-        hablar(respuesta or "No entendí esa orden.")
+    respuesta = ejecutar_orden(texto)
+    if isinstance(respuesta, ia.RespuestaIA):
+        seguir_conversacion()
 
 
 def bucle():

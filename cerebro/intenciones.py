@@ -114,6 +114,8 @@ def procesar(texto):
     respuesta = aprendizaje.buscar_aprendido(t)      # primero lo que le enseñaste
     if respuesta is None:
         respuesta = _comando_base(t)
+    if respuesta is None and ia.conversacion_activa():
+        respuesta = ia.responder(t)                  # seguimiento de la charla ("¿y para qué sirve?")
     if respuesta is None and ia.RESPONDER_TODO and len(t.split()) >= 3:
         respuesta = ia.responder(t)                  # opcional: todo lo demás va a la IA
 

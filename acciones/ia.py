@@ -124,6 +124,11 @@ def responder(pregunta):
     return RespuestaIA(texto)
 
 
+def conversacion_activa():
+    """Hay una charla en curso: lo que siga sin ser una orden se toma como seguimiento."""
+    return bool(_historial) and time.time() - _ultimo_uso <= OLVIDAR_TRAS
+
+
 def preguntar(m):
     pregunta = re.sub(r"^(?:pregunta|preguntale)\s+", "", m.string).strip()
     return responder(pregunta)

@@ -13,8 +13,8 @@ from voz.escuchar import _modelo, normalizar_audio
 SR = 16000
 BLOQUE = 4000            # 0.25 s de audio por bloque
 UMBRAL = CFG.get("umbral_voz", 0.015)
-SILENCIO_BLOQUES = 2     # 0.5 s de pausa = fin de la frase
-MAX_BLOQUES = 24         # hasta 6 s por frase (cabe "Jarvis, abre ...")
+SILENCIO_BLOQUES = 3     # 0.75 s de pausa = fin de la frase
+MAX_BLOQUES = 48         # hasta 12 s por frase (cabe "Jarvis, explícame ...")
 ATAJO = "ctrl+alt+j"
 DEPURAR = True           # muestra lo que oye; ponlo en False cuando todo funcione
 

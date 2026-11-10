@@ -5,7 +5,7 @@ import time
 import traceback
 import winsound
 
-from config import BASE, CFG
+from config import BASE, CFG, DEPURAR_VOZ
 
 # Sin consola (pythonw), lo que se imprime va a un archivo de registro
 if sys.stdout is None:
@@ -60,7 +60,8 @@ def ejecutar_orden(texto):
         hablar(respuesta.pregunta)
         winsound.Beep(900, 150)
         confirmacion = escuchar(espera=5, maximo=6)
-        print("Confirmación:", confirmacion)
+        if DEPURAR_VOZ:
+            print("Confirmación:", confirmacion)
         hablar(respuesta.accion() if es_afirmativo(confirmacion) else "Cancelado.")
     else:
         hablar(respuesta or "No entendí esa orden.")
@@ -72,7 +73,8 @@ def seguir_conversacion():
     while True:
         winsound.Beep(900, 150)
         texto = escuchar(espera=6)
-        print("Seguimiento:", texto)
+        if DEPURAR_VOZ:
+            print("Seguimiento:", texto)
         if not texto:
             return                                   # silencio: termina la charla
         if FIN_CHARLA.search(normalizar(texto)):
@@ -93,7 +95,8 @@ def atender(origen, orden=None):
     else:                                  # "Jarvis" ... pitido ... orden
         winsound.Beep(900, 150)
         texto = escuchar()
-    print("Entendí:", texto)
+    if DEPURAR_VOZ:
+        print("Entendí:", texto)
 
     if not texto:
         hablar("No te escuché.")

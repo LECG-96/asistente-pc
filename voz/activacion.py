@@ -7,7 +7,7 @@ import numpy as np
 import sounddevice as sd
 
 from acciones.rutinas import RUTINAS
-from config import CFG
+from config import CFG, DEPURAR_VOZ
 from voz.escuchar import _modelo, normalizar_audio
 
 SR = 16000
@@ -16,7 +16,6 @@ UMBRAL = CFG.get("umbral_voz", 0.015)
 SILENCIO_BLOQUES = 3     # 0.75 s de pausa = fin de la frase
 MAX_BLOQUES = 48         # hasta 12 s por frase (cabe "Jarvis, explícame ...")
 ATAJO = "ctrl+alt+j"
-DEPURAR = True           # muestra lo que oye; ponlo en False cuando todo funcione
 
 # Frases de las rutinas que se activan sin decir "Jarvis" (marcadas "sin_jarvis" en config.json)
 _frases_clave = [r["frases"][0].capitalize() + "." for r in RUTINAS.values() if r.get("sin_jarvis")]
@@ -48,16 +47,19 @@ def _detectar(audio):
         vad_filter=True,
         initial_prompt=VOCABULARIO,
     )
-    texto = _normalizar(" ".join(s.text for s in segmentos))
-    if DEPURAR and texto.strip():
-        print("[oído]", texto.strip())
+    texto = " ".join(_normalizar(" ".join(s.text for s in segmentos)).split())
+    if DEPURAR_VOZ and texto:
+        print("[oído]", texto)
 
     for clave, variantes in CLAVES.items():
         for variante in variantes:
-            pos = texto.find(variante)
-            if pos != -1:
-                resto = re.sub(r"\s+", " ", texto[pos + len(variante):]).strip()
-                return clave, resto
+            if clave.startswith("rutina:"):
+                if texto == " ".join(_normalizar(variante).split()):
+                    return clave, ""
+            else:
+                m = re.search(rf"\b{re.escape(variante)}\b", texto)
+                if m:
+                    return clave, texto[m.end():].strip()
     return None, ""
 
 

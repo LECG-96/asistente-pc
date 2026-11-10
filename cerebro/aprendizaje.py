@@ -32,6 +32,16 @@ def ensenar(m):
         if not apps.buscar(destino):
             return f"No conozco {destino}. Agrégalo primero en el archivo de configuración."
         tipo, accion = "abrir", "abrir"
+    elif verbo in ("cierra", "cerrar"):
+        if not apps.buscar_proceso(destino):
+            return f"No sé cerrar {destino}. Revisa su configuración."
+        tipo, accion = "cerrar", "cerrar"
+    elif verbo in ("presiona", "presionar"):
+        combo = apps.combinacion(destino)
+        if not combo:
+            return "No entendí qué teclas presionar."
+        tipo, accion = "presionar", "presionar"
+        destino = combo
     else:
         tipo, accion = "responder", "responder"
     _sql("INSERT OR REPLACE INTO comandos VALUES (?, ?, ?)", (frase, tipo, destino))
@@ -48,7 +58,13 @@ def buscar_aprendido(t):
     if not r:
         return None
     _, tipo, destino = filas[r[2]]
-    return apps.abrir_destino(destino) if tipo == "abrir" else destino
+    if tipo == "abrir":
+        return apps.abrir_destino(destino)
+    if tipo == "cerrar":
+        return apps.cerrar_destino(destino)
+    if tipo == "presionar":
+        return apps.presionar_combo(destino)
+    return destino
 
 
 def olvidar(m):

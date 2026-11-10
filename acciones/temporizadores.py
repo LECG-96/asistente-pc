@@ -26,10 +26,10 @@ def _numero(texto):
 
 
 PATRONES = [
-    (rf"\b(?:{_NUM}\s+)?horas?\s+y\s+media\b",
+    (re.compile(rf"\b(?:{_NUM}\s+)?horas?\s+y\s+media\b"),
      lambda m: (_numero(m.group(1)) if m.group(1) else 1) * 3600 + 1800),
-    (r"\bmedia hora\b", lambda m: 1800),
-    (rf"\b{_NUM}\s+(segundo|minuto|hora)s?\b",
+    (re.compile(r"\bmedia hora\b"), lambda m: 1800),
+    (re.compile(rf"\b{_NUM}\s+(segundo|minuto|hora)s?\b"),
      lambda m: _numero(m.group(1)) * UNIDAD_SEG[m.group(2)]),
 ]
 
@@ -40,13 +40,24 @@ _contador = 0
 
 def _extraer(texto):
     """Devuelve (segundos totales, texto del recordatorio) a partir de la frase."""
-    original, total, fin = texto, 0, 0
-    for patron, valor in PATRONES:
-        for m in list(re.finditer(patron, texto)):
-            total += valor(m)
-            fin = max(fin, m.end())
-            texto = texto[:m.start()] + " " * (m.end() - m.start()) + texto[m.end():]
-    etiqueta = re.sub(r"^(?:que|de|para|a|por|y)\s+", "", original[fin:].strip()) if total else ""
+    coincidencias = [
+        (m.start(), m.end(), valor(m))
+        for patron, valor in PATRONES
+        for m in patron.finditer(texto)
+    ]
+    if not coincidencias:
+        return 0, ""
+
+    total, fin = 0, 0
+    # Si dos patrones empiezan en el mismo punto, "una hora y media" gana a "una hora".
+    for inicio, siguiente, segundos in sorted(coincidencias, key=lambda dato: (dato[0], -dato[1])):
+        if inicio < fin:
+            continue
+        if fin and not re.fullmatch(r"\s*(?:y\s+)?", texto[fin:inicio]):
+            break
+        total += segundos
+        fin = siguiente
+    etiqueta = re.sub(r"^(?:que|de|para|a|por|y)\s+", "", texto[fin:].strip())
     return total, etiqueta
 
 

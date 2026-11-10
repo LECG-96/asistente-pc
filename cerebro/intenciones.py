@@ -9,6 +9,7 @@ from cerebro import aprendizaje
 from voz import dictado
 
 UMBRAL = 80
+NEGACION_INICIAL = re.compile(r"^(?:(?:por favor|oye|eh|mejor)\s+)*(?:no|nunca|jamas)\b")
 
 # Respuestas que significan "no entendí / no sé hacerlo": cuentan como fallo, no como uso
 FALLOS = ("No sé ", "No conozco", "No entendí")
@@ -31,8 +32,8 @@ REGLAS = [
      r"|^(?:que (?:es|son|significa|significan)|quien (?:es|fue|era|fueron)|como funcionan?|por que"
      r"|para que sirven?|cual es la diferencia|cuales son|cuanto es|cuantos|cuantas)\b", ia.preguntar),
     (r"cancela.*(?:apagado|reinicio)|aborta.*(?:apagado|reinicio)|cancelar apagado", energia.cancelar),
-    (r"\b(?:apaga|apagar)\b.*\b(?:pc|computador|computadora|equipo|sistema)\b", energia.apagar),
-    (r"\b(?:reinicia|reiniciar)\b.*\b(?:pc|computador|computadora|equipo|sistema)\b", energia.reiniciar),
+    (r"^(?:por favor )?(?:apaga|apagar)\b.*\b(?:pc|computador|computadora|equipo|sistema)\b", energia.apagar),
+    (r"^(?:por favor )?(?:reinicia|reiniciar)\b.*\b(?:pc|computador|computadora|equipo|sistema)\b", energia.reiniciar),
     (r"^(?:bloquea|bloquear)\b", energia.bloquear),
     (r"cancela.*(?:temporizador|temporizadores|alarma|alarmas|recordatorio|recordatorios)", temporizadores.cancelar),
     (r"cuanto (?:falta|queda)|que temporizadores tengo|temporizadores activos", temporizadores.estado),
@@ -45,10 +46,10 @@ REGLAS = [
     (r"^(?:busca|buscar|buscame)\s+(.+?)(?:\s+en\s+google)?$", web.buscar_google),
     (r"\b(?:clima|pronostico|llover|lluvia)\b|que temperatura hace|temperatura (?:afuera|exterior)|hace (?:frio|calor)", clima.clima),
     (rf"volumen.*?\b(\d{{1,3}}|{volumen.PALABRAS_NUMERO})\b", volumen.fijar),
-    (r"(?:sube|subir|aumenta|aumentar).*volumen|mas volumen", volumen.subir),
-    (r"(?:baja|bajar|disminuye|reduce).*volumen|menos volumen", volumen.bajar),
+    (r"^(?:por favor )?(?:(?:sube|subir|aumenta|aumentar)\b.*volumen|mas volumen\b)", volumen.subir),
+    (r"^(?:por favor )?(?:(?:baja|bajar|disminuye|reduce)\b.*volumen|menos volumen\b)", volumen.bajar),
     (r"(?:activa|reactiva|enciende).*sonido|quita(?:r)? el silencio|desmutea", volumen.activar_sonido),
-    (r"silencia|silenciar|mutea|mutear|silencio", volumen.silenciar),
+    (r"^(?:por favor )?(?:silencia|silenciar|mutea|mutear|silencio)\b", volumen.silenciar),
 ]
 
 # Frases libres (coincidencia flexible)
@@ -91,7 +92,10 @@ def _comando_base(t):
 
     mejor_funcion, mejor_puntaje = None, 0
     for frases, funcion in INTENCIONES:
-        _, puntaje, _ = process.extractOne(t, frases, scorer=fuzz.token_set_ratio)
+        resultado = process.extractOne(t, frases, scorer=fuzz.ratio)
+        if resultado is None:
+            continue
+        _, puntaje, _ = resultado
         if puntaje > mejor_puntaje:
             mejor_funcion, mejor_puntaje = funcion, puntaje
 
@@ -104,6 +108,8 @@ def procesar(texto):
     """Devuelve lo que Jarvis debe responder (texto o Confirmacion), o None si no entendió."""
     t = normalizar(texto)
     if not t:
+        return None
+    if NEGACION_INICIAL.match(t):
         return None
 
     for patron, funcion in REGLAS_META:

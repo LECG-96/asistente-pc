@@ -3,7 +3,6 @@ import unicodedata
 
 AFIRMATIVAS = {"si", "confirmo", "confirmar", "confirmado", "dale", "adelante",
                "hazlo", "claro", "ok", "okey", "afirmativo"}
-NEGATIVAS = {"no", "cancela", "cancelar", "cancelado", "negativo", "espera", "detente"}
 
 
 class Confirmacion:
@@ -14,12 +13,8 @@ class Confirmacion:
         self.accion = accion          # función sin argumentos que devuelve lo que dirá
 
 
-def _palabras(texto):
+def es_afirmativo(texto):
     texto = unicodedata.normalize("NFD", texto.lower())
     texto = "".join(c for c in texto if unicodedata.category(c) != "Mn")
-    return set(re.sub(r"[^a-z ]", " ", texto).split())
-
-
-def es_afirmativo(texto):
-    p = _palabras(texto)
-    return bool(p & AFIRMATIVAS) and not (p & NEGATIVAS)
+    frase = re.sub(r"[^a-z0-9\s]", " ", texto).strip()
+    return frase in AFIRMATIVAS

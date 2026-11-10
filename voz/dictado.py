@@ -6,6 +6,8 @@ import keyboard
 import numpy as np
 import sounddevice as sd
 
+from config import DEPURAR_VOZ
+
 TIEMPO_SIN_VOZ = 15      # segundos en silencio antes de cerrar el dictado solo
 SILENCIO_BLOQUES = 3     # 0.75 s de pausa separa una frase de otra
 MAX_BLOQUES = 60         # hasta 15 s por frase
@@ -53,7 +55,8 @@ def dictar(m=None):
                 texto = " ".join(s.text.strip() for s in segmentos).strip()
                 if not texto:
                     continue
-                print("[dictado]", texto)
+                if DEPURAR_VOZ:
+                    print("[dictado]", texto)
 
                 norm = _norm(texto)
                 if FIN.search(norm):

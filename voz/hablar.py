@@ -1,6 +1,5 @@
 import asyncio
 import hashlib
-import json
 import tempfile
 import threading
 import time
@@ -12,12 +11,11 @@ import soundfile as sf
 from pedalboard import (Compressor, HighpassFilter, LowpassFilter,
                         Pedalboard, Reverb)
 
-BASE = Path(__file__).resolve().parent.parent
-_CFG = json.loads((BASE / "config.json").read_text(encoding="utf-8"))
+from config import BASE, CFG
 
-VOZ = _CFG["voz"]
-RATE = _CFG["rate"]
-PITCH = _CFG["pitch"]
+VOZ = CFG["voz"]
+RATE = CFG["rate"]
+PITCH = CFG["pitch"]
 
 CACHE = BASE / "datos" / "cache_voz"
 CACHE.mkdir(parents=True, exist_ok=True)
